@@ -1,0 +1,108 @@
+name: scanned-image-extractor-unofficial
+summary: A
+description: |
+  D
+version: '0.2.601'
+grade: stable
+confinement: strict
+base: core18
+license: GPL-3.0
+icon: snap/gui/icon.png
+
+architectures:
+  - build-on: amd64
+
+parts:
+
+  desktop-qt5:
+    source: https://github.com/ubuntu/snapcraft-desktop-helpers.git
+    source-subdir: qt
+    plugin: make
+    make-parameters: ["FLAVOR=qt5"]
+    build-packages:
+      - qtbase5-dev
+      - dpkg-dev
+    stage-packages:
+      - libxkbcommon0
+      - ttf-ubuntu-font-family
+      - dmz-cursor-theme
+      - light-themes
+      - adwaita-icon-theme
+      - gnome-themes-standard
+      - shared-mime-info
+      - libqt5gui5
+      - libgdk-pixbuf2.0-0
+      - libqt5svg5 # for loading icon themes which are svg
+      - try: [appmenu-qt5] # not available on core18
+      - locales-all
+      - libglib2.0-0
+      - appmenu-gtk3-module
+      - libcanberra-gtk3-module
+      - qt5-gtk-platformtheme
+    override-prime: |
+      snapcraftctl prime
+      glib-compile-schemas usr/share/glib-2.0/schemas
+
+  scanned-image-extractor-unofficial:
+    plugin: dump
+    source: ./local/scannerextract_20230626-1_amd64.deb
+    source-type: deb
+    stage-packages:
+      - liblbfgs0
+      - libopencv-core3.2
+      - libopencv-imgcodecs3.2
+      - libopencv-imgproc3.2
+      - libgomp1
+    after: [desktop-qt5]
+
+  blas:
+    plugin: nil
+    stage-packages:
+      - libblas3
+
+
+apps:
+  scanned-image-extractor-unofficial:
+    command: bin/desktop-launch $SNAP/usr/bin/scannedImageExtractor
+    desktop: usr/share/applications/scannedImageExtractor.desktop
+    environment:
+      PATH: $SNAP/usr/bin:$SNAP/bin:$PATH
+      LD_LIBRARY_PATH: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/lapack:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/blas:$SNAP/lib:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/apulse:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/dri
+      XDG_CONFIG_DIRS: $SNAP/etc/xdg:$XDG_CONFIG_DIRS 
+      XDG_DATA_DIRS: $SNAP/usr/share:$XDG_DATA_DIRS
+
+      # Fallback to XWayland if running in a Wayland session.
+      DISABLE_WAYLAND: 1
+      # Use GTK3 cursor theme, icon theme and open/save file dialogs.
+      QT_QPA_PLATFORMTHEME: gtk3      
+    plugs:
+      - x11
+      - unity7
+      - home
+      - network
+      - network-bind
+      - desktop
+      - desktop-legacy
+      - gsettings
+      - opengl
+      - removable-media
+      - mount-observe
+      - audio-playback
+
+plugs:
+  gtk-2-engines:
+    interface: content
+    target: $SNAP/lib/gtk-2.0
+    default-provider: gtk2-common-themes
+  gtk-3-themes:
+    interface: content
+    target: $SNAP/share/themes
+    default-provider: gtk-common-themes
+  icon-themes:
+    interface: content
+    target: $SNAP/share/icons
+    default-provider: gtk-common-themes
+  sound-themes:
+    interface: content
+    target: $SNAP/share/sounds
+    default-provider: gtk-common-themes
